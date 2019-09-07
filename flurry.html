@@ -1,0 +1,73 @@
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width">
+		<style>
+			video, canvas {
+				display: inline-block;
+				vertical-align: top;
+				width: 480px;
+			}
+		</style>
+	</head>
+	<body>
+		<video name="bunny-vid">
+			<source src="smurfs-lost-village-trailer-3_h1080p.mov" type="video/mp4" crossOrigin="anonymous">
+		</video>
+		<canvas id="capture"></canvas>
+		<script type="text/javascript" src="js/jquery-ajax.js"></script> <!-- Minified, ajax module only -->
+		<script type="text/javascript">
+			var init = null;
+
+			(function(doc, jq) {
+				var video = doc.getElementsByTagName('video')[0],
+					multiplier = 1,
+					capture = doc.getElementById('capture'),
+					capContext = capture.getContext('2d'),
+					frameDur = (1 / (24000 / 1001)),
+					imgType = 'png',
+					frameCount = 0;
+
+				function loadNextFrame() { // load next frame
+					if (frameCount) {
+						capContext.drawImage(video, 0, 0);
+
+						jq.post('saveimg.php', {
+							vidName: video.getAttribute('name'),
+							imgType: imgType,
+							imgData: capture.toDataURL('image/' + imgType),
+							frameCount: frameCount,
+							videoHeight: video.videoHeight,
+							videoWidth: video.videoWidth
+						});
+					}
+
+					video.currentTime += frameDur;
+					frameCount++;
+				}
+
+				function setupCanvas() {
+					capture.width = (video.videoWidth * multiplier);
+					capture.height = (video.videoHeight * multiplier);
+					capContext.scale(multiplier, multiplier);
+					capContext.imageSmoothingEnabled = false;
+					video.currentTime = 0; // stops autoplay and fires "seeked event"
+				}
+
+				video.addEventListener('loadedmetadata', function() {
+					setupCanvas();
+					loadNextFrame(); // move playhead to first frame
+				});
+
+				video.addEventListener('seeked', function(e) {
+					if (!video.ended) {
+						loadNextFrame();
+					}
+				});
+
+				init = setupCanvas;
+			})(document, jQuery);
+		</script>
+
+	</body>
+</html>
+
